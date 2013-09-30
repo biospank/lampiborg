@@ -1,0 +1,122 @@
+#!/bin/bash
+#
+# lamp          Start/Stop any shell script
+#
+# chkconfig: 345 95 65
+# description: lamp
+# processname: lampd
+#
+
+# ENVIRONMENT
+# Edit these for your configuration
+
+# Name for the service, used in logging
+NAME=lamp
+
+# Name of the user to be used to execute the service
+SCRIPT_USER=root # pi for raspberry
+
+# Example of how to pass paramters into the command
+PARAM2=whatever
+
+# In which directory is the shell script that this service will execute
+LAMP_SCRIPTS_DIR=/root/lampi
+
+# Construct the command the will cd into the right directory, and invoke the script
+#LAMP_COMMAND="cd $LAMP_SCRIPTS_DIR && ./http_server.sh 'param1' $PARAM2"
+LAMP_COMMAND="cd $LAMP_SCRIPTS_DIR && ./lamp_server.sh"
+
+# How can the script be identified if it appears in a 'ps' command via grep?
+#  Examples to use are 'java', 'python' etc.
+LAMP_PROCESS_TYPE=ruby
+
+# Where to write the log file?
+LAMP_SVC_LOG_FILE=$LAMP_SCRIPTS_DIR/lamp_server.log
+
+# Where to write the process identifier - this is used to track if the service is already running
+# Note: the script noted in the COMMAND must actually write this file
+PID_FILE=$LAMP_SCRIPTS_DIR/lamp_server.pid
+
+# Load system specific optional arguments
+# Create and populate this file with machine specific settings
+if [ -f /etc/sysconfig/lampd ]; then
+    . /etc/sysconfig/lampd
+fi
+
+# Is the service already running? If so, capture the process id
+if [ -f $PID_FILE ]; then
+    PID=`cat $PID_FILE`
+else
+    PID=""
+fi
+
+# SERVICE ENTRY POINTS (START/STOP)
+
+# Start Command
+start() {
+    if [ "${PID}" != "" ]; then
+        # Check to see if the /proc dir for this process exists
+        if [ -a /proc/${PID} ]; then
+            # check to make sure this is likely the running service
+            ps aux | grep ${PID} | grep $LAMP_PROCESS_TYPE >> /dev/null
+            # If it is a process of the right type assume that it is lamp and just exit
+            # otherwise remove the subsys lock file and start lamp
+            if [ "$?" = "0" ]; then
+                exit 1
+            else
+                echo "lamp lock file still exists, removing..."
+                rm /var/lock/lampd
+            fi
+        else
+            # The process running as pid $PID is not a process of the right type, remove subsys
+            # lock and start lamp
+            echo "lamp lock file still exists, removing..."
+            rm /var/lock/lampd
+        fi
+    fi
+    echo -n "Starting lamp: "
+    su - $SCRIPT_USER -c "/bin/sh -c \"$LAMP_COMMAND > $LAMP_SVC_LOG_FILE 2>&1\"" & RETVAL=$?
+    sleep 3
+    touch /var/lock/lampd
+    exit 0
+}
+
+stop() {
+
+    echo -n $"Stopping lamp: "
+    if [ "${PID}" != "" ]; then
+        echo -n "killing " $PID
+        kill ${PID}
+        for i in {1..30}
+        do
+            if [ -n "`ps aux | grep $LAMP_PROCESS_TYPE | grep lamp `" ]; then
+                sleep 1 # Still running, wait a second.
+                echo -n .
+            else
+                # stopped
+                rm -f /var/lock/lampd
+                rm -f $PID_FILE
+                echo
+                exit 0
+            fi
+        done
+    else
+        echo "$NAME is not running"
+        exit 1
+    fi
+    echo "Failed to stop in 30 seconds."
+    kill -QUIT ${PID} # Request a thread dump so we can diagnose a hung shutdown
+    exit 1
+}
+
+case "$1" in
+  start)
+      start
+    ;;
+  stop)
+      stop
+    ;;
+  *)
+    echo $"Usage: $0 {start|stop}"
+    exit 1
+esac
