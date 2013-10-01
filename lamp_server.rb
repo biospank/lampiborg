@@ -4,51 +4,56 @@ require 'tmpdir'
 
 configure :production do
   disable :logging
-  set :lamposx_version, '30'
-  set :lamposx_download_link, "https://dl.dropboxusercontent.com/u/621599/work/Lamp-3.0.dmg"
-  set :lampwin_version, '30'
-  set :lampwin_download_link, "https://dl.dropboxusercontent.com/u/621599/work/Lamp-3.0-setup.exe"
+  set :transmitter_pin, '19'
+  set :r_jolly_led_pin, '0'
+  set :g_computer_led_pin, '2'
+  set :b_phone_led_pin, '3'
+  set :lampiosx_version, '30'
+  set :lampiosx_download_link, "https://dl.dropboxusercontent.com/u/621599/work/Lamp-3.0.dmg"
+  set :lampiwin_version, '30'
+  set :lampiwin_download_link, "https://dl.dropboxusercontent.com/u/621599/work/Lamp-3.0-setup.exe"
 end
 
-system 'gpio mode 0 out' # transmitter pin
-system 'gpio mode 2 out' # computer led pin
-system 'gpio mode 3 out' # phone led pin
-system 'gpio mode 8 in' # push button
-
-# reset
-system 'gpio write 2 0'
-system 'gpio write 3 0'
-FileUtils.rm("#{Dir.tmpdir}/blink.2.lock") rescue nil
-FileUtils.rm("#{Dir.tmpdir}/blink.3.lock") rescue nil
-
-# Thread.new do
-#   while true do
-#    if(( res = `gpio read 8` ).chomp == '1')
-#       sleep 2
-#     else
-#       system 'gpio write 2 0'
-#       system 'gpio write 3 0'
-#     end
-#   end
-# end
+system "gpio mode #{settings.transmitter_pin} out"
+system "gpio mode #{settings.r_jolly_led_pin} out"
+system "gpio mode #{settings.g_computer_led_pin} out"
+system "gpio mode #{settings.b_phone_led_pin} out"
 
 $pids = []
 
+$leds = {
+  settings.r_jolly_led_pin => :off,
+  settings.g_computer_led_pin => :off,
+  settings.b_phone_led_pin => :off
+}
+
+# start notification
+$leds.keys.each do |key|
+  system "gpio write #{key} 1"
+  sleep 0.6
+end
+
+# reset
+$leds.keys.each do |key|
+  system "gpio write #{key} 0"
+  sleep 0.6
+end
+
+FileUtils.rm("#{Dir.tmpdir}/blink.lock") rescue nil
+
 get '/lamp/:device' do
-  system 'gpio write 0 1'
+  system "gpio write #{settings.transmitter_pin} 1"
   sleep 0.5
-  system 'gpio write 0 0'
+  system "gpio write #{settings.transmitter_pin} 0"
 
   case params[:device]
   when 'osx', 'win'
-    led = 2
+    $leds[settings.g_computer_led_pin] = :on
   when 'droid'
-    led = 3
+    $leds[settings.b_phone_led_pin] = :on
   end
 
-  #system 'gpio write #{led} 1'
-
-  unless File.exist?("#{Dir.tmpdir}/blink.#{led}.lock")
+  unless File.exist?("#{Dir.tmpdir}/blink.lock")
 
     $pids << fork do
       $interrupt = false
@@ -57,23 +62,28 @@ get '/lamp/:device' do
         $interrupt = true
       end
 
-      File.open("#{Dir.tmpdir}/blink.#{led}.lock", File::RDWR|File::CREAT, 0644) do |f|
+      File.open("#{Dir.tmpdir}/blink.lock", File::RDWR|File::CREAT, 0644) do |f|
         #f.flock(File::LOCK_EX)
         while true do
           if $interrupt
-            system 'gpio write 2 0'
-            system 'gpio write 3 0'
+            system "gpio write #{settings.r_jolly_led_pin} 0"
+            system "gpio write #{settings.g_computer_led_pin} 0"
+            system "gpio write #{settings.b_phone_led_pin} 0"
             break
           else
-            sleep 0.8
-            system "gpio write #{led} 1"
-            sleep 0.6
-            system "gpio write #{led} 0"
+            $leds.each do |led, value|
+              if value == :on
+                sleep 0.8
+                system "gpio write #{led} 1"
+                sleep 0.6
+                system "gpio write #{led} 0"
+              end
+            end
           end
         end
       end
 
-      FileUtils.rm("#{Dir.tmpdir}/blink.#{led}.lock")
+      FileUtils.rm("#{Dir.tmpdir}/blink.lock")
 
     end
 
@@ -86,9 +96,9 @@ get '/lamp/:device/version' do
 
   case params[:device]
   when 'osx'
-    version = settings.lamposx_version
+    version = settings.lampiosx_version
   when 'win'
-    version = settings.lampwin_version
+    version = settings.lampiwin_version
   end
 
   version
@@ -98,22 +108,25 @@ get '/lamp/:device/download' do
 
   case params[:device]
   when 'osx'
-    download_link = settings.lamposx_download_link
+    download_link = settings.lampiosx_download_link
   when 'win'
-    download_link = settings.lampwin_download_link
+    download_link = settings.lampiwin_download_link
   end
 
   download_link
 end
 
 get '/lamp/led/reset' do
-  #system 'gpio write 2 0'
-  #system 'gpio write 3 0'
+
   $pids.each do |pid|
     Process.kill("HUP", pid) rescue nil
   end
 
   $pids.clear
+
+  $leds.keys.each do |key|
+    $leds[key] = :off    
+  end
 
   'ok'
 end
