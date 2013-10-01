@@ -53,38 +53,35 @@ get '/lamp/:device' do
     $leds[settings.b_phone_led_pin] = :on
   end
 
-  unless File.exist?("#{Dir.tmpdir}/blink.lock")
+  $pids.each do |pid|
+    Process.kill("HUP", pid) rescue nil
+  end
 
-    $pids << fork do
-      $interrupt = false
+  $pids.clear
 
-      Signal.trap("HUP") do
-        $interrupt = true
-      end
+  $pids << fork do
+    $interrupt = false
 
-      File.open("#{Dir.tmpdir}/blink.lock", File::RDWR|File::CREAT, 0644) do |f|
-        #f.flock(File::LOCK_EX)
-        while true do
-          if $interrupt
-            system "gpio write #{settings.r_jolly_led_pin} 0"
-            system "gpio write #{settings.g_computer_led_pin} 0"
-            system "gpio write #{settings.b_phone_led_pin} 0"
-            break
-          else
-            $leds.each do |led, value|
-              if value == :on
-                sleep 0.8
-                system "gpio write #{led} 1"
-                sleep 0.6
-                system "gpio write #{led} 0"
-              end
-            end
+    Signal.trap("HUP") do
+      $interrupt = true
+    end
+
+    while true do
+      if $interrupt
+        system "gpio write #{settings.r_jolly_led_pin} 0"
+        system "gpio write #{settings.g_computer_led_pin} 0"
+        system "gpio write #{settings.b_phone_led_pin} 0"
+        break
+      else
+        $leds.each do |led, value|
+          if value == :on
+            sleep 0.8
+            system "gpio write #{led} 1"
+            sleep 0.6
+            system "gpio write #{led} 0"
           end
         end
       end
-
-      FileUtils.rm("#{Dir.tmpdir}/blink.lock")
-
     end
 
   end
@@ -130,4 +127,5 @@ get '/lamp/led/reset' do
 
   'ok'
 end
+
 
