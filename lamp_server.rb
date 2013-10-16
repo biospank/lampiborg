@@ -4,7 +4,7 @@ require 'tmpdir'
 
 configure :production do
   disable :logging
-  set :transmitter_pin, '19'
+  set :transmitter_pin, '7'
   set :r_jolly_led_pin, '0'
   set :g_computer_led_pin, '2'
   set :b_phone_led_pin, '3'
