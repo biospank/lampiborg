@@ -3,4 +3,4 @@
 # git pull 
 #
 
-cd /root/lampi/ && git pull origin master
+cd /root/lampi/ && git pull origin
