@@ -48,9 +48,9 @@ get '/lamp/:device' do
 
   case params[:device]
   when 'osx', 'win'
-    $leds[settings.g_computer_led_pin] = :on
+    $leds[settings.r_jolly_led_pin] = :on
   when 'droid'
-    $leds[settings.b_phone_led_pin] = :on
+    $leds[settings.g_computer_led_pin] = :on
   end
 
   $pids.each do |pid|
@@ -58,6 +58,8 @@ get '/lamp/:device' do
   end
 
   $pids.clear
+
+  sleep 1
 
   $pids << fork do
     $interrupt = false

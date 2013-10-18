@@ -23,7 +23,7 @@ PARAM2=whatever
 UDP_SCRIPTS_DIR=/root/lampi
 
 # Construct the command the will cd into the right directory, and invoke the script
-GIT_COMMAND="cd $UDP_SCRIPTS_DIR && git pull origin master"
+#GIT_COMMAND="cd $UDP_SCRIPTS_DIR && git pull origin master"
 
 # Construct the command the will cd into the right directory, and invoke the script
 #UDP_COMMAND="cd $UDP_SCRIPTS_DIR && ./http_server.sh 'param1' $PARAM2"
@@ -77,8 +77,8 @@ start() {
             rm /var/lock/udpd
         fi
     fi
-    echo -n "Updating repo: "
-    su - $SCRIPT_USER -c "/bin/sh -c \"$GIT_COMMAND\""
+    #echo -n "Updating repo: "
+    #su - $SCRIPT_USER -c "/bin/sh -c \"$GIT_COMMAND\""
     echo -n "Starting udp: "
     su - $SCRIPT_USER -c "/bin/sh -c \"$UDP_COMMAND > $UDP_SVC_LOG_FILE 2>&1\"" & RETVAL=$?
     sleep 3
