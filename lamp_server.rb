@@ -43,7 +43,7 @@ FileUtils.rm("#{Dir.tmpdir}/blink.lock") rescue nil
 
 get '/lamp/:device' do
   system "gpio write #{settings.transmitter_pin} 1"
-  sleep 0.5
+  sleep 2
   system "gpio write #{settings.transmitter_pin} 0"
 
   case params[:device]
