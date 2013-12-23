@@ -47,6 +47,34 @@ install ruby
 install sinatra
 
     gem install sinatra
+    
+## RPI wifi
+
+edit file /etc/network/interfaces and make sure to see this line
+
+    iface wlan0 inet dhcp
+    
+edit file /etc/wpa_supplicant/wpa_supplicant.conf
+
+append these lines
+
+    network={
+      ssid="lampi"
+      psk="lampi9571"
+      scan_ssid=1
+      # Protocol type can be: RSN (for WP2) and WPA (for WPA1)
+      proto=RNS
+    
+      # Key management type can be: WPA-PSK or WPA-EAP (Pre-Shared or Enterprise)
+      key_mgmt=WPA-PSK
+    
+      # Pairwise can be CCMP or TKIP (for WPA2 or WPA1)
+      pairwise=CCMP TKIP
+    
+      #Authorization option should be OPEN for both WPA1/WPA2 (in less commonly used are SHARED and LEAP)
+      auth_alg=OPEN
+    }
+
 
 ## RPI-Wireless-Hotspot (ralink 3570)
 
