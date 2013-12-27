@@ -50,29 +50,36 @@ install sinatra
     
 ## RPI wifi
 
-edit file /etc/network/interfaces and make sure to see this line
+edit file /etc/network/interfaces and make sure to have this configuration
 
-    iface wlan0 inet dhcp
+    auto lo
     
+    iface lo inet loopback
+    iface eth0 inet dhcp
+    
+    auto wlan0
+    allow-hotplug wlan0
+    iface wlan0 inet manual
+    wpa-roam /etc/wpa_supplicant/wpa_supplicant.conf
+    iface default inet dhcp
+
 edit file /etc/wpa_supplicant/wpa_supplicant.conf
 
-append these lines
+it should look like this:
 
+
+    ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+    update_config=1
+    
     network={
       ssid="lampi"
-      psk="lampi9571"
+      proto=RSN
       scan_ssid=1
-      # Protocol type can be: RSN (for WP2) and WPA (for WPA1)
-      proto=RNS
-    
-      # Key management type can be: WPA-PSK or WPA-EAP (Pre-Shared or Enterprise)
       key_mgmt=WPA-PSK
-    
-      # Pairwise can be CCMP or TKIP (for WPA2 or WPA1)
       pairwise=CCMP TKIP
-    
-      #Authorization option should be OPEN for both WPA1/WPA2 (in less commonly used are SHARED and LEAP)
-      auth_alg=OPEN
+      group=CCMP TKIP
+      psk="lampi9571"
+      id_str="lampi"
     }
 
 
