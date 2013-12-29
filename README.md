@@ -50,6 +50,10 @@ install sinatra
     
 ## RPI wifi
 
+install wpa supplicant
+
+    sudo apt-get install wpasupplicant
+
 edit file /etc/network/interfaces and make sure to have this configuration
 
     auto lo
