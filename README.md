@@ -71,7 +71,6 @@ edit file /etc/wpa_supplicant/wpa_supplicant.conf
 
 it should look like this:
 
-
     ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
     update_config=1
     
@@ -86,6 +85,10 @@ it should look like this:
       id_str="lampi"
     }
 
+to disable power management create a new /etc/modprobe.d/8192cu.conf file with this content
+
+    options 8192cu rtw_power_mgnt=0 rtw_enusbss=0
+    
 
 ## RPI-Wireless-Hotspot (ralink 3570)
 
