@@ -42,9 +42,12 @@ end
 FileUtils.rm("#{Dir.tmpdir}/blink.lock") rescue nil
 
 get '/lamp/:device' do
-  system "gpio write #{settings.transmitter_pin} 1"
-  sleep 2
-  system "gpio write #{settings.transmitter_pin} 0"
+
+  fork do
+    system "gpio write #{settings.transmitter_pin} 1"
+    sleep 2
+    system "gpio write #{settings.transmitter_pin} 0"
+  end
 
   case params[:device]
   when 'osx', 'win'
