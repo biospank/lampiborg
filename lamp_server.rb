@@ -8,6 +8,7 @@ configure :production do
   set :r_jolly_led_pin, '0'
   set :g_computer_led_pin, '2'
   set :b_phone_led_pin, '3'
+  set :flash_pin, '12'
   set :lampiosx_version, '30'
   set :lampiosx_download_link, "https://dl.dropboxusercontent.com/u/621599/work/Lamp-3.0.dmg"
   set :lampiwin_version, '30'
@@ -18,6 +19,7 @@ system "gpio mode #{settings.transmitter_pin} out"
 system "gpio mode #{settings.r_jolly_led_pin} out"
 system "gpio mode #{settings.g_computer_led_pin} out"
 system "gpio mode #{settings.b_phone_led_pin} out"
+system "gpio mode #{settings.flash_pin} out"
 
 $pids = []
 
@@ -47,6 +49,15 @@ get '/lamp/:device' do
     system "gpio write #{settings.transmitter_pin} 1"
     sleep 2
     system "gpio write #{settings.transmitter_pin} 0"
+  end
+
+  fork do
+		6.times do
+			sleep 0.8
+			system "gpio write #{settings.flash_pin} 1"
+			sleep 0.6
+			system "gpio write #{settings.flash_pin} 0"
+		end
   end
 
   case params[:device]
